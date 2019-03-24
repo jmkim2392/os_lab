@@ -8,6 +8,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
+//#include <stdlib.h>
 
 #include "kernel.h"
 #include "hal/hal.h"
@@ -50,8 +51,10 @@ void main(uint32_t r0, uint32_t r1, uint32_t atags){
 
   int index= 0;
   char* currentPath = "\\*.*";
-  int wordCount = 0;
-  char* wordArr[10];
+  int pathCount = 0;
+  char* result;
+  char *temp;
+  char pathArray[10][20];
 
 	while (1){
     c = hal_io_serial_getc( SerialA );
@@ -64,14 +67,27 @@ void main(uint32_t r0, uint32_t r1, uint32_t atags){
 
         if (strncmp(tok, "ls", 2) == 0)
         { 
-          printf_serial("\n\nDirectory (/): \n");
+          printf_serial("\n\nDirectory (%s): \n", currentPath);
           DisplayDirectory(currentPath);
         }
         else if (strncmp(tok, "cd", 2) == 0)
         { 
           char *arg = strtok(NULL, " ");
-          printf_serial(arg);
-          
+          //temp = strdup(currentPath);
+          if (strncmp(arg, "..", 2) == 0)
+          {
+            char *tmp = strtok(currentPath, "\\");
+            tmp = strtok(NULL, "\\");
+            strcpy(currentPath, "\\");
+            strcat(currentPath, tmp);
+          }
+          else
+          {
+            strcpy(temp, currentPath);
+            strcpy(currentPath, "\\");
+            strcat(currentPath, arg);
+            strcat(currentPath, temp);
+          }
         }
         else if (strncmp(tok, "cat", 3) == 0)
         {
@@ -87,9 +103,11 @@ void main(uint32_t r0, uint32_t r1, uint32_t atags){
 
       memset(cArr, 0, 100);
       index = 0;
-      wordCount = 0;
       
     } 
+    else if ( c == '\b') {
+      index--;
+    }
      else {
       cArr[index++] = c;
       printf_video( "%c", c );  //<<--- We also have printfs
