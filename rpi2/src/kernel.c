@@ -8,6 +8,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
+
 //#include <stdlib.h>
 
 #include "kernel.h"
@@ -16,7 +17,7 @@
 
 #include "drivers/stdio/emb-stdio.h"			// Needed for printf
 #include "drivers/sdcard/SDCard.h"
-
+#include <unistd.h>
 void kernel_init(void);
 void input_output_init(void);
 void sys_info( uint8_t* );
@@ -24,9 +25,10 @@ void sd_card_fs_demo();
 void print (uint8_t* );
 void print_file_contents(char *);
 void DisplayDirectory(const char*);
+void loadBin();
 
 char buffer[500];
-
+unsigned char bufferBin[500];
 
 /*
  *		Kernel's entry point
@@ -55,6 +57,8 @@ void main(uint32_t r0, uint32_t r1, uint32_t atags){
   char* result;
   char *temp;
   char pathArray[10][20];
+  loadBin();
+
 
 	while (1){
     c = hal_io_serial_getc( SerialA );
@@ -100,6 +104,15 @@ void main(uint32_t r0, uint32_t r1, uint32_t atags){
         { 
           print("System Info: This is RPI2\n"); 
         }
+		else if (strncmp(tok, "dump", 4) == 0)
+		{
+			for (size_t i = 0; i < 500; i++)
+			{
+				printf_serial("%u ", &bufferBin[i]);
+				printf_video("%u ", &bufferBin[i]);
+			}
+		}
+
 
       memset(cArr, 0, 100);
       index = 0;
@@ -197,6 +210,26 @@ void print_file_contents(char *filename)
     // Close the file
     sdCloseHandle(fHandle);
   }
+}
+
+void loadBin() {
+	HANDLE fHandle = sdCreateFile("Threads.bin", GENERIC_READ, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+	if (fHandle != 0) {
+		uint32_t bytesRead;
+
+		if ((sdReadFile(fHandle, &bufferBin[0], 500, &bytesRead, 0) == true)) {
+			bufferBin[bytesRead - 1] = '\0';  ///insert null char
+
+			
+		}
+		else {
+			printf_serial("Failed to load bin");
+		}
+
+		// Close the file
+		sdCloseHandle(fHandle);
+
+	}
 }
 
 void sd_card_fs_demo(){
